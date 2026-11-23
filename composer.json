@@ -1,6 +1,6 @@
 {
     "name": "xqkeji/xq-res-click-captcha",
-    "description": "滑动拼图验证码的PHP的Composer包。",
+    "description": "文字点选验证码的PHP的Composer包。",
     "type": "library",
     "license": "AGPL-3.0-only",
     "autoload": {

@@ -1,5 +1,5 @@
 /*!
- * xq-click-captcha v1.1.0 (https://xqkeji.cn/demo/xq-click-captcha)
+ * xq-click-captcha v1.1.1 (https://xqkeji.cn/demo/xq-click-captcha)
  * Author xqkeji.cn
  * LICENSE AGPL-3.0-only
  * Copyright 2026 xqkeji.cn
@@ -1472,16 +1472,18 @@
       let target = url;
       let body;
       if (data) {
-        const params = new URLSearchParams(data).toString();
         if (method === "GET") {
+          const params = new URLSearchParams(
+            Object.entries(data).map(([key, value]) => [key, String(value)])
+          ).toString();
           target += (url.includes("?") ? "&" : "?") + params;
         } else {
-          body = params;
+          body = JSON.stringify(data);
         }
       }
       const headers = { Accept: "application/json, text/plain, */*" };
       if (body !== void 0) {
-        headers["Content-Type"] = "application/x-www-form-urlencoded";
+        headers["Content-Type"] = "application/json";
       }
       try {
         const response = await fetch(target, {
@@ -2770,7 +2772,7 @@
       this.hint = new Hint(this.ctx.dom, this.ctx.options);
       this.loading = new Loading(this.ctx.dom);
       this.click = new ClickHandler(this.ctx.dom, this.ctx.state, this.markers, this.ripple, (points) => {
-        this.ctx.submit({ click_points: JSON.stringify(points) });
+        this.ctx.submit({ points });
       });
     }
     buildModal(options) {
@@ -2948,7 +2950,7 @@ bootstrap/js/dist/modal.js:
 xq-captcha-core/dist/logic.mjs:
 xq-captcha-core/dist/index.mjs:
   (*!
-   * xq-captcha-core v1.1.0 (https://xqkeji.cn/)
+   * xq-captcha-core v1.1.1 (https://xqkeji.cn/)
    * Author xqkeji.cn
    * LICENSE AGPL-3.0-only
    * Copyright 2026 xqkeji.cn

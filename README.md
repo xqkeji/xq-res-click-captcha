@@ -164,7 +164,7 @@ captcha
 ```ts
 interface Transport {
   /** 2xx 时 resolve 响应文本，其余情况 reject HttpError。 */
-  request(method: 'GET' | 'POST', url: string, data?: Record<string, string>): Promise<string>;
+  request(method: 'GET' | 'POST', url: string, data?: Record<string, unknown>): Promise<string>;
 }
 ```
 
@@ -191,7 +191,7 @@ const backend: Transport = USE_REAL_BACKEND
   : new MockBackend();
 ```
 
-内置 `FetchTransport` 用 `application/x-www-form-urlencoded` 提交、`credentials: 'same-origin'` 带上同源 Cookie（答案存在后端会话里），超时用 `AbortController` 中断。`HttpError.status` 沿用上游语义：`-1` 超时、`0` 网络错误、其余为 HTTP 状态码。
+内置 `FetchTransport`：GET 把参数拼到 URL 查询串，POST 用 `application/json` 提交 JSON 对象（字段见下方接口契约）；`credentials: 'same-origin'` 带上同源 Cookie（答案存在后端会话里），超时用 `AbortController` 中断。`HttpError.status` 沿用上游语义：`-1` 超时、`0` 网络错误、其余为 HTTP 状态码。
 
 ## 实例 API
 
@@ -229,7 +229,7 @@ const backend: Transport = USE_REAL_BACKEND
 
 查询参数：`t`（时间戳）、`_s`（随机串）用于破坏缓存。
 
-响应体必须是 JSON，且 `success` 为 boolean、`type` 为 `click`/`null`、`image_base64` 为 string，否则抛「验证码数据格式不正确」。`success: false` 时抛 `message`。
+响应体必须是 JSON，且 `success` 为 boolean、`type` 为 `click`/`null`、`image_base64` 为 string，否则抛「验证码数据格式不正确」。`success: false` 时抛 `message`。同时兼容 `{code: 200, data: {...}}` 或 `{success: true, data: {...}}` 包裹形式，组件会解包并把 `success` 视为 `true`。
 
 | 键 | 说明 |
 | --- | --- |
@@ -242,14 +242,16 @@ const backend: Transport = USE_REAL_BACKEND
 
 ### POST `checkUrl`
 
-| 场景 | 表单字段 |
+请求体为 JSON（`Content-Type: application/json`）。
+
+| 场景 | JSON 字段 |
 | --- | --- |
-| 点选检验 | `click_points`（JSON 数组） |
-| 二次验证 | `token`（由宿主表单提交，不经组件） |
+| 点选检验 | `points`：`{x, y, t}` 数组 |
+| 二次验证 | `token`：字符串（由宿主表单提交，不经组件） |
 
-点击点为 `{x, y, t}`：坐标是**图片像素**，`t` 为相对首次点击的毫秒数（首点为 0），后端据此拒绝机器式瞬时点击。CSS 像素到图片像素的换算由组件按画布实际显示宽度完成，宿主无需关心缩放与 DPR。点选检验由 `/admin/user/captchacheck` 完成。
+点击点为 `{x, y, t}`：坐标是**图片像素**，`t` 为相对首次点击的毫秒数（首点为 0），后端据此拒绝机器式瞬时点击。组件直接发送数组，不再把 JSON 字符串塞进表单字段。CSS 像素到图片像素的换算由组件按画布实际显示宽度完成，宿主无需关心缩放与 DPR。点选检验由 `/admin/user/captchacheck` 完成。
 
-响应规范化为 `{success, token, message}`。除标准形式外还兼容老后端：`code === 200`、`status === 'ok' | 'success'`，以及纯文本 `ok` / `"ok"` / `true` / `1`。`message` 缺失时依次退回 `error` 字段、`failText`。
+响应规范化为 `{success, token, message}`。除标准形式外还兼容老后端：`code === 200`、`status === 'ok' | 'success'`，以及纯文本 `ok` / `"ok"` / `true` / `1`；也兼容把字段放在 `data` 对象里的包裹形式（根级没有 `token` / `message` 时自动读取）。`message` 缺失时依次退回 `error` 字段、`failText`。
 
 ### 验证模式
 
